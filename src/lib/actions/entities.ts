@@ -177,3 +177,13 @@ export async function deleteFinancialEntry(id: string, projectId: string) {
   revalidatePath("/financials");
   revalidatePath(`/projects/${projectId}`);
 }
+
+/* ---------------- Project notes ---------------- */
+
+export async function updateProjectNotes(projectId: string, formData: FormData) {
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { notes: str(formData.get("notes")) },
+  });
+  revalidatePath(`/projects/${projectId}`);
+}

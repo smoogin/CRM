@@ -77,6 +77,7 @@ model Project {
   position     Int             @default(0)         // order within a stage
   quantity     Int?
   targetDate   DateTime?
+  notes        String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -94,6 +95,18 @@ model Project {
 
   financials   FinancialEntry[]
   vendors      ProjectVendor[]
+  attachments  Attachment[]
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filename     String   // stored filename on disk (server-generated)
+  originalName String   // display name from the user's upload
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
 }
 
 model ProjectVendor {

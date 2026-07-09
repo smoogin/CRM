@@ -14,6 +14,8 @@ import {
   createFinancialEntry,
   deleteFinancialEntry,
 } from "@/lib/actions/entities";
+import { ProjectNotes } from "@/components/ProjectNotes";
+import { ProjectFiles } from "@/components/ProjectFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,7 @@ export default async function ProjectDetail({
       stage: true,
       financials: { orderBy: { date: "desc" } },
       vendors: { include: { vendor: true } },
+      attachments: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -231,6 +234,19 @@ export default async function ProjectDetail({
               <button className="btn-primary">Add</button>
             </form>
           </div>
+
+          <ProjectNotes projectId={project.id} initial={project.notes ?? ""} />
+
+          <ProjectFiles
+            projectId={project.id}
+            files={project.attachments.map((a) => ({
+              id: a.id,
+              originalName: a.originalName,
+              mimeType: a.mimeType,
+              size: a.size,
+              createdAt: a.createdAt.toISOString(),
+            }))}
+          />
         </div>
 
         {/* Right: vendors */}

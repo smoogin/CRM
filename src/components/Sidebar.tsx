@@ -10,6 +10,7 @@ const NAV = [
   { href: "/contacts", label: "Contacts", icon: "M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z" },
   { href: "/vendors", label: "Vendors", icon: "M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7" },
   { href: "/financials", label: "Financials", icon: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" },
+  { href: "/markup", label: "Markup Calc", icon: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8 7h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h4" },
 ];
 
 export function Sidebar({

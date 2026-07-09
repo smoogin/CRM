@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  industry  String?
+  website   String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  contacts  Contact[]
+  projects  Project[]
+}
+
+model Contact {
+  id         String    @id @default(cuid())
+  firstName  String
+  lastName   String
+  title      String?
+  email      String?
+  phone      String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  companyId  String?
+  company    Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  projects   Project[]
+}
+
+model Vendor {
+  id           String          @id @default(cuid())
+  name         String
+  category     String?         // e.g. Corrugated, Films, Labels, Foam
+  contactName  String?
+  email        String?
+  phone        String?
+  website      String?
+  leadTimeDays Int?
+  rating       Int?            // 1-5
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  projects     ProjectVendor[]
+}
+
+model Stage {
+  id        String    @id @default(cuid())
+  name      String
+  color     String    @default("#64748b")
+  category  String    @default("OPEN") // OPEN, WON, LOST — drives dashboard rollups
+  position  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  projects  Project[]
+}
+
+model Project {
+  id           String          @id @default(cuid())
+  name         String
+  description  String?
+  priority     String          @default("MEDIUM") // LOW, MEDIUM, HIGH
+  position     Int             @default(0)         // order within a stage
+  quantity     Int?
+  targetDate   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  stageId      String
+  stage        Stage           @relation(fields: [stageId], references: [id])
+
+  companyId    String?
+  company      Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  contactId    String?
+  contact      Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  estRevenue   Float?          // expected sell price total
+  estCost      Float?          // expected cost total
+
+  financials   FinancialEntry[]
+  vendors      ProjectVendor[]
+}
+
+model ProjectVendor {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId  String
+  vendor    Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  role      String? // what they supply for this project
+  quotedCost Float?
+
+  @@unique([projectId, vendorId])
+}
+
+model FinancialEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String   // REVENUE or COST
+  category  String?  // Materials, Freight, Tooling, Commission, etc.
+  label     String
+  amount    Float
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+}

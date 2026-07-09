@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"$HOME/.local/tools/node-v22.14.0-darwin-x64/bin:$PATH\")",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"home:%{http_code} projects:\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/projects)",
+      "Bash(/usr/bin/tail -5 ~/.zshrc)",
+      "Bash(/usr/bin/wc -l ~/.zshrc)",
+      "Bash(export PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin\" cd /Users/brockriley/Documents/PACKAGINGCRM npx prisma db push --force-reset)",
+      "Bash(export PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin\" cd /Users/brockriley/Documents/PACKAGINGCRM npm run build)",
+      "Bash(export PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin\")",
+      "Bash(node -e ':*)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"next-server\")",
+      "Bash(export PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin\" cd /Users/brockriley/Documents/PACKAGINGCRM node -e ':*)",
+      "Bash(export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin cd /Users/brockriley/Documents/PACKAGINGCRM ls package-lock.json)",
+      "Bash(export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/tools/node-v22.14.0-darwin-x64/bin cd /Users/brockriley/Documents/PACKAGINGCRM pkill -f 'next dev')",
+      "Bash(pkill -f next-server 2)",
+      "Bash(/dev/null sleep:*)",
+      "Bash(node -e '\\(async\\(\\)=>{const r=await fetch\\(\"\"http://localhost:3005/projects\"\"\\);console.log\\(\"\"/projects ->\"\",r.status\\);const t=await r.text\\(\\);console.log\\(\"\"has Add stage tile:\"\",/Add stage/.test\\(t\\)\\);}\\)\\(\\).catch\\(e=>console.log\\(\"\"ERR\"\",e.message\\)\\)')",
+      "Read(//private/tmp/railway-vol/**)"
+    ]
+  }
+}

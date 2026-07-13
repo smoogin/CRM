@@ -35,7 +35,7 @@ export function Modal({
       {trigger(() => setOpen(true))}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-16"
+          className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 pt-16"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}

@@ -29,6 +29,8 @@ import {
 } from "@/lib/actions/territory";
 import { addInventoryItem, deleteInventoryItem } from "@/lib/actions/inventory";
 import { addExpense, deleteExpense } from "@/lib/actions/expenses";
+import { createRoute } from "@/lib/actions/routes";
+import { optimizeOrder, routeMiles, googleMapsUrl } from "@/lib/route";
 
 type Tab = "timeline" | "inventory" | "spending" | "info";
 
@@ -107,6 +109,14 @@ export function TerritoryClient({ prospects }: { prospects: ProspectDTO[] }) {
   const [needsAttention, setNeedsAttention] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("timeline");
+  const [routeMode, setRouteMode] = useState(false);
+  const [routeIds, setRouteIds] = useState<string[]>([]);
+
+  function toggleRouteStop(id: string) {
+    setRouteIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   const counties = useMemo(
     () =>
@@ -151,9 +161,21 @@ export function TerritoryClient({ prospects }: { prospects: ProspectDTO[] }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/territory/routes" className="btn-ghost">
+            Routes
+          </Link>
           <Link href="/territory/spending" className="btn-ghost">
             Spending report
           </Link>
+          <button
+            className={routeMode ? "btn-primary" : "btn-ghost"}
+            onClick={() => {
+              setRouteMode((m) => !m);
+              setSelectedId(null);
+            }}
+          >
+            {routeMode ? "Exit route" : "Plan route"}
+          </button>
           <Modal
             title="Add prospect"
             trigger={(open) => (
@@ -235,9 +257,15 @@ export function TerritoryClient({ prospects }: { prospects: ProspectDTO[] }) {
         <TerritoryMap
           prospects={filtered}
           selectedId={selectedId}
+          routeMode={routeMode}
+          routeIds={routeIds}
           onSelect={(id) => {
-            setSelectedId(id);
-            setTab("timeline");
+            if (routeMode) {
+              toggleRouteStop(id);
+            } else {
+              setSelectedId(id);
+              setTab("timeline");
+            }
           }}
         />
 
@@ -261,13 +289,215 @@ export function TerritoryClient({ prospects }: { prospects: ProspectDTO[] }) {
           </div>
         )}
 
-        {selected && (
+        {routeMode && (
+          <RouteBuilderPanel
+            prospects={prospects}
+            routeIds={routeIds}
+            setRouteIds={setRouteIds}
+            onRemove={toggleRouteStop}
+            onClose={() => {
+              setRouteMode(false);
+              setRouteIds([]);
+            }}
+          />
+        )}
+
+        {!routeMode && selected && (
           <ProspectDrawer
             prospect={selected}
             tab={tab}
             setTab={setTab}
             onClose={() => setSelectedId(null)}
           />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RouteBuilderPanel({
+  prospects,
+  routeIds,
+  setRouteIds,
+  onRemove,
+  onClose,
+}: {
+  prospects: ProspectDTO[];
+  routeIds: string[];
+  setRouteIds: (ids: string[]) => void;
+  onRemove: (id: string) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [optimized, setOptimized] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [pending, start] = useTransition();
+
+  // Selected stops in current order (only those with coordinates count for
+  // distance / optimization / Google Maps handoff).
+  const stops = routeIds
+    .map((id) => prospects.find((p) => p.id === id))
+    .filter((p): p is ProspectDTO => !!p);
+  const mapped = stops.filter((p) => p.lat != null && p.lng != null);
+  const miles = mapped.length >= 2
+    ? routeMiles(mapped.map((p) => ({ lat: p.lat as number, lng: p.lng as number })))
+    : 0;
+
+  function optimize() {
+    const ordered = optimizeOrder(
+      mapped.map((p) => ({ id: p.id, lat: p.lat as number, lng: p.lng as number })),
+    );
+    // Keep any coordinate-less stops at the end so they aren't dropped.
+    const unmapped = stops.filter((p) => p.lat == null || p.lng == null);
+    setRouteIds([...ordered.map((o) => o.id), ...unmapped.map((p) => p.id)]);
+    setOptimized(true);
+  }
+
+  function save() {
+    start(async () => {
+      await createRoute({
+        name: name.trim() || null,
+        date,
+        optimized,
+        distanceMiles: miles || null,
+        prospectIds: routeIds,
+      });
+      setSaved(true);
+    });
+  }
+
+  return (
+    <div className="absolute inset-y-0 right-0 z-[600] flex w-full max-w-md flex-col overflow-y-auto border-l border-slate-200 bg-white shadow-xl">
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Plan route</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Tap pins to add stops, then optimize the order.
+          </p>
+        </div>
+        <button
+          className="btn-ghost h-8 w-8 !px-0"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="flex-1 px-5 py-4">
+        {stops.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            No stops yet. Click prospect pins on the map to add them.
+          </p>
+        ) : (
+          <ol className="space-y-2">
+            {stops.map((p, i) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-white">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-700">
+                    {p.name}
+                  </p>
+                  <p className="truncate text-xs text-slate-400">
+                    {p.lat == null || p.lng == null
+                      ? "No coordinates"
+                      : p.county
+                      ? `${p.county} County`
+                      : p.address}
+                  </p>
+                </div>
+                <button
+                  className="btn-ghost text-slate-400 hover:text-red-600"
+                  onClick={() => onRemove(p.id)}
+                  aria-label={`Remove ${p.name}`}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {stops.length > 0 && (
+          <div className="mt-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">
+                {stops.length} stop{stops.length === 1 ? "" : "s"}
+              </span>
+              <span className="font-semibold text-slate-700">
+                {miles > 0 ? `~${miles} mi` : "—"}
+                {optimized && (
+                  <span className="ml-1 text-xs font-normal text-emerald-600">
+                    optimized
+                  </span>
+                )}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="btn-ghost flex-1"
+                onClick={optimize}
+                disabled={mapped.length < 3}
+              >
+                Optimize order
+              </button>
+              <a
+                className="btn-ghost flex-1 text-center"
+                href={mapped.length >= 1
+                  ? googleMapsUrl(
+                      mapped.map((p) => ({
+                        lat: p.lat as number,
+                        lng: p.lng as number,
+                      })),
+                    )
+                  : undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={mapped.length < 1}
+              >
+                Open in Maps
+              </a>
+            </div>
+            <input
+              className="input h-9 py-1 text-sm"
+              placeholder={`Route name (default: ${date})`}
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setSaved(false);
+              }}
+            />
+            <input
+              type="date"
+              className="input h-9 py-1 text-sm"
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setSaved(false);
+              }}
+            />
+            <button
+              className="btn-primary w-full"
+              onClick={save}
+              disabled={pending || saved}
+            >
+              {saved ? "Saved ✓" : pending ? "Saving…" : "Save route"}
+            </button>
+            {saved && (
+              <Link
+                href="/territory/routes"
+                className="block text-center text-xs text-brand-600 hover:underline"
+              >
+                View saved routes →
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </div>

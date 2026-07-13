@@ -151,6 +151,27 @@ model Prospect {
   visits              VisitLog[]
   inventory           InventoryItem[]
   expenses            Expense[]
+  routeStops          RouteStop[]
+}
+
+model Route {
+  id            String      @id @default(cuid())
+  name          String?
+  date          DateTime    @default(now())
+  optimized     Boolean     @default(false)
+  distanceMiles Float?      // straight-line total across ordered stops
+  createdAt     DateTime    @default(now())
+  stops         RouteStop[]
+}
+
+model RouteStop {
+  id         String   @id @default(cuid())
+  routeId    String
+  route      Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  order      Int      // 0-based visit order
+  done       Boolean  @default(false)
 }
 
 model InventoryItem {

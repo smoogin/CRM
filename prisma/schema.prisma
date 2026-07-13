@@ -121,6 +121,18 @@ model ProjectVendor {
   @@unique([projectId, vendorId])
 }
 
+model MarkupCalc {
+  id        String   @id @default(cuid())
+  label     String?
+  quantity  Int
+  unitCost  Float
+  unitSell  Float
+  markup    Float
+  totalCost Float
+  totalSell Float
+  createdAt DateTime @default(now())
+}
+
 model FinancialEntry {
   id        String   @id @default(cuid())
   projectId String

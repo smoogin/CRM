@@ -157,9 +157,9 @@ model InventoryItem {
   id            String   @id @default(cuid())
   prospectId    String
   prospect      Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
-  filename      String   // stored file on disk (server-generated)
-  mimeType      String
-  size          Int
+  filename      String?  // stored file on disk (server-generated); null = no photo
+  mimeType      String?
+  size          Int?
   packagingType String   // rigid box / folding carton / sleeve / clamshell / backer card / POP display / other
   notes         String?
   dateCaptured  DateTime @default(now())

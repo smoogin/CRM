@@ -44,7 +44,7 @@ export type InventoryDTO = {
   id: string;
   packagingType: string;
   notes: string | null;
-  mimeType: string;
+  hasPhoto: boolean;
   dateCaptured: string;
 };
 
@@ -513,11 +513,14 @@ function InventoryPanel({ prospect }: { prospect: ProspectDTO }) {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const file = fileRef.current?.files?.[0];
-    if (!file) {
-      setError("Choose a photo first.");
+    const notes = (
+      e.currentTarget.elements.namedItem("notes") as HTMLTextAreaElement | null
+    )?.value.trim();
+    if (!file && !notes) {
+      setError("Add a photo or a part number / description.");
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
+    if (file && file.size > 25 * 1024 * 1024) {
       setError("Photo is too large (25 MB max).");
       return;
     }
@@ -557,13 +560,16 @@ function InventoryPanel({ prospect }: { prospect: ProspectDTO }) {
         </select>
         <textarea
           name="notes"
-          placeholder="Notes (optional)"
+          placeholder="Part number, spec, or description"
           className="input min-h-[48px] text-sm"
         />
+        <p className="text-[10px] text-slate-400">
+          Photo optional — a part number or description is enough.
+        </p>
         {error && <p className="text-xs text-red-600">{error}</p>}
         <div className="flex justify-end">
           <button type="submit" className="btn-primary" disabled={pending}>
-            {pending ? "Uploading…" : "Add item"}
+            {pending ? "Saving…" : "Add item"}
           </button>
         </div>
       </form>
@@ -577,18 +583,24 @@ function InventoryPanel({ prospect }: { prospect: ProspectDTO }) {
               key={item.id}
               className="overflow-hidden rounded-lg border border-slate-200"
             >
-              <a
-                href={`/api/inventory/${item.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/inventory/${item.id}`}
-                  alt={item.packagingType}
-                  className="h-28 w-full object-cover"
-                />
-              </a>
+              {item.hasPhoto ? (
+                <a
+                  href={`/api/inventory/${item.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/inventory/${item.id}`}
+                    alt={item.packagingType}
+                    className="h-28 w-full object-cover"
+                  />
+                </a>
+              ) : (
+                <div className="flex h-28 w-full items-center justify-center bg-slate-50 text-3xl text-slate-300">
+                  📦
+                </div>
+              )}
               <div className="p-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-700">

@@ -16,7 +16,7 @@ export async function GET(
   const item = await prisma.inventoryItem.findUnique({
     where: { id: params.id },
   });
-  if (!item) return new Response("Not found", { status: 404 });
+  if (!item || !item.filename) return new Response("Not found", { status: 404 });
 
   let data: Buffer;
   try {
@@ -25,14 +25,15 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  const disposition = INLINE.has(item.mimeType) ? "inline" : "attachment";
+  const mimeType = item.mimeType ?? "application/octet-stream";
+  const disposition = INLINE.has(mimeType) ? "inline" : "attachment";
   return new Response(new Uint8Array(data), {
     headers: {
-      "Content-Type": item.mimeType,
+      "Content-Type": mimeType,
       "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(
         item.filename,
       )}`,
-      "Content-Length": String(item.size),
+      "Content-Length": String(data.byteLength),
       "X-Content-Type-Options": "nosniff",
     },
   });

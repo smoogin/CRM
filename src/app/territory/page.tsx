@@ -40,7 +40,7 @@ export default async function TerritoryPage() {
           id: i.id,
           packagingType: i.packagingType,
           notes: i.notes,
-          mimeType: i.mimeType,
+          hasPhoto: i.filename !== null,
           dateCaptured: i.dateCaptured.toISOString(),
         })),
         expenses: p.expenses.map((e) => ({

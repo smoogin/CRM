@@ -58,6 +58,60 @@ export const FINANCIAL_CATEGORIES = [
   "Other",
 ];
 
+/* ---------------- Territory ---------------- */
+
+export const PROSPECT_STATUSES = [
+  { key: "cold", label: "Cold", color: "#3b82f6" },
+  { key: "warm", label: "Warm", color: "#f59e0b" },
+  { key: "hot", label: "Hot", color: "#ef4444" },
+  { key: "customer", label: "Customer", color: "#10b981" },
+  { key: "dormant", label: "Dormant", color: "#94a3b8" },
+] as const;
+
+export const PROSPECT_VERTICALS = [
+  "Firearms",
+  "Automotive Tier 2-3",
+  "Food & Beverage",
+  "Medical",
+  "Ag",
+  "E-commerce / 3PL",
+  "Other",
+];
+
+export const VISIT_TYPES = [
+  { key: "cold call", label: "Cold call", xp: 10 },
+  { key: "check-in", label: "Check-in", xp: 15 },
+  { key: "meeting", label: "Meeting", xp: 25 },
+  { key: "call", label: "Phone call", xp: 10 },
+  { key: "drop-off", label: "Drop-off", xp: 10 },
+] as const;
+
+export function statusMeta(key: string) {
+  return PROSPECT_STATUSES.find((s) => s.key === key) ?? PROSPECT_STATUSES[0];
+}
+
+export function visitTypeMeta(key: string) {
+  return VISIT_TYPES.find((v) => v.key === key) ?? VISIT_TYPES[0];
+}
+
+// Health decays after a 2-week grace period, -5 points per week thereafter.
+// Drives the map pin fade ("this account needs attention").
+export function healthScore(
+  lastContactDate: Date | string | null | undefined,
+  createdAt: Date | string,
+): number {
+  const ref = lastContactDate ?? createdAt;
+  const days = (Date.now() - new Date(ref).getTime()) / 86400000;
+  const decayed = Math.max(0, days - 14) / 7 * 5;
+  return Math.max(0, Math.min(100, Math.round(100 - decayed)));
+}
+
+export function healthMeta(score: number) {
+  if (score >= 70) return { label: "Healthy", color: "#10b981" };
+  if (score >= 40) return { label: "Cooling", color: "#f59e0b" };
+  return { label: "Needs attention", color: "#ef4444" };
+}
+
 export function priorityMeta(key: string) {
   return PRIORITIES.find((p) => p.key === key) ?? PRIORITIES[1];
 }

@@ -133,6 +133,35 @@ model MarkupCalc {
   createdAt DateTime @default(now())
 }
 
+model Prospect {
+  id                  String      @id @default(cuid())
+  name                String
+  address             String?
+  lat                 Float?
+  lng                 Float?
+  county              String?
+  status              String      @default("cold") // cold, warm, hot, customer, dormant
+  vertical            String?     // firearms, automotive Tier 2-3, food & bev, medical, ag, e-commerce/3PL, other
+  dealValueEstimate   Float?
+  lastContactDate     DateTime?
+  notes               String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  visits              VisitLog[]
+}
+
+model VisitLog {
+  id         String   @id @default(cuid())
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  date       DateTime @default(now())
+  type       String   // cold call, check-in, meeting, call, drop-off
+  notes      String?
+  xpAwarded  Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
 model FinancialEntry {
   id        String   @id @default(cuid())
   projectId String

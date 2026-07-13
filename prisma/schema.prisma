@@ -149,6 +149,33 @@ model Prospect {
   updatedAt           DateTime    @updatedAt
 
   visits              VisitLog[]
+  inventory           InventoryItem[]
+  expenses            Expense[]
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  prospectId    String
+  prospect      Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  filename      String   // stored file on disk (server-generated)
+  mimeType      String
+  size          Int
+  packagingType String   // rigid box / folding carton / sleeve / clamshell / backer card / POP display / other
+  notes         String?
+  dateCaptured  DateTime @default(now())
+  createdAt     DateTime @default(now())
+}
+
+model Expense {
+  id         String    @id @default(cuid())
+  prospectId String?
+  prospect   Prospect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  type       String    // gas / meal / gift / other
+  amount     Float
+  miles      Float?    // optional, for gas mileage calc
+  date       DateTime  @default(now())
+  notes      String?
+  createdAt  DateTime  @default(now())
 }
 
 model VisitLog {

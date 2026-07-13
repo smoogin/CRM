@@ -86,6 +86,30 @@ export const VISIT_TYPES = [
   { key: "drop-off", label: "Drop-off", xp: 10 },
 ] as const;
 
+export const PACKAGING_TYPES = [
+  "Rigid box",
+  "Folding carton",
+  "Sleeve",
+  "Clamshell",
+  "Backer card",
+  "POP display",
+  "Other",
+];
+
+export const EXPENSE_TYPES = [
+  { key: "gas", label: "Gas", color: "#0ea5e9" },
+  { key: "meal", label: "Meal", color: "#f59e0b" },
+  { key: "gift", label: "Gift", color: "#ec4899" },
+  { key: "other", label: "Other", color: "#94a3b8" },
+] as const;
+
+// IRS 2025 standard business mileage rate ($/mile) for gas auto-calc.
+export const MILEAGE_RATE = 0.7;
+
+export function expenseTypeMeta(key: string) {
+  return EXPENSE_TYPES.find((e) => e.key === key) ?? EXPENSE_TYPES[3];
+}
+
 export function statusMeta(key: string) {
   return PROSPECT_STATUSES.find((s) => s.key === key) ?? PROSPECT_STATUSES[0];
 }

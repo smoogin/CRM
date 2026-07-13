@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { VISIT_TYPES } from "../src/lib/constants";
+import { VISIT_TYPES, MILEAGE_RATE } from "../src/lib/constants";
 
 // Standalone seed for the Territory tab. Unlike the main seed it ONLY touches
 // Prospect/VisitLog, so it can be run without wiping the rest of the CRM.
@@ -128,12 +128,44 @@ const PROSPECTS: Seed[] = [
   },
 ];
 
+// Sample expenses. `to` matches a prospect name (or null = unassigned).
+type ExpenseSeed = {
+  to: string | null;
+  type: string;
+  amount?: number;
+  miles?: number;
+  days: number;
+  notes?: string;
+};
+
+const EXPENSES: ExpenseSeed[] = [
+  { to: "Motor City Stampings", type: "gas", miles: 48, days: 4, notes: "Detroit site tour" },
+  { to: "Motor City Stampings", type: "meal", amount: 62.4, days: 4, notes: "Lunch w/ ops mgr" },
+  { to: "Kellanova Snacks", type: "gas", miles: 118, days: 7, notes: "Battle Creek RFQ visit" },
+  { to: "Kellanova Snacks", type: "gift", amount: 85, days: 7, notes: "Sample box + swag" },
+  { to: "Stryker Instruments", type: "gas", miles: 96, days: 9 },
+  { to: "Stryker Instruments", type: "meal", amount: 41.75, days: 9, notes: "Coffee meeting" },
+  { to: "Lakeshore Fulfillment 3PL", type: "gas", miles: 132, days: 3, notes: "Holland peak-prep" },
+  { to: "Warren Precision Components", type: "gas", miles: 36, days: 12 },
+  { to: "Ann Arbor Medical Devices", type: "meal", amount: 54.2, days: 25, notes: "Dinner" },
+  { to: "Capital Ag Cooperative", type: "gas", miles: 88, days: 18 },
+  { to: "Great Lakes Provisions", type: "gas", miles: 62, days: 40 },
+  { to: "Saginaw Valley Grain", type: "gas", miles: 104, days: 48, notes: "Re-engagement drive" },
+  { to: null, type: "gas", miles: 40, days: 15, notes: "Office supply run" },
+  { to: null, type: "other", amount: 29.99, days: 22, notes: "Business cards" },
+  { to: "Motor City Stampings", type: "gas", miles: 48, days: 32 },
+  { to: "Kellanova Snacks", type: "meal", amount: 38.5, days: 38, notes: "Follow-up lunch" },
+];
+
 async function main() {
+  await prisma.expense.deleteMany();
+  await prisma.inventoryItem.deleteMany();
   await prisma.visitLog.deleteMany();
   await prisma.prospect.deleteMany();
 
+  const idByName = new Map<string, string>();
   for (const s of PROSPECTS) {
-    await prisma.prospect.create({
+    const p = await prisma.prospect.create({
       data: {
         name: s.name,
         address: s.address,
@@ -154,9 +186,30 @@ async function main() {
         },
       },
     });
+    idByName.set(s.name, p.id);
   }
 
-  console.log(`Seeded ${PROSPECTS.length} territory prospects.`);
+  for (const e of EXPENSES) {
+    const amount =
+      e.amount ??
+      (e.miles != null
+        ? Math.round(e.miles * MILEAGE_RATE * 100) / 100
+        : 0);
+    await prisma.expense.create({
+      data: {
+        prospectId: e.to ? idByName.get(e.to) ?? null : null,
+        type: e.type,
+        amount,
+        miles: e.miles ?? null,
+        date: daysAgo(e.days),
+        notes: e.notes ?? null,
+      },
+    });
+  }
+
+  console.log(
+    `Seeded ${PROSPECTS.length} territory prospects and ${EXPENSES.length} expenses.`,
+  );
 }
 
 main()

@@ -4,16 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, StageBadge, PriorityDot } from "@/components/ui";
 import { EditProjectButton } from "@/components/EditProjectButton";
 import { DeleteButton } from "@/components/DeleteButton";
-import { FINANCIAL_CATEGORIES, formatCurrency, formatDate } from "@/lib/constants";
+import {
+  entryCost,
+  entryRevenue,
+  formatCurrency,
+  formatUnitPrice,
+  formatDate,
+} from "@/lib/constants";
 import {
   deleteProject,
   addProjectVendor,
   removeProjectVendor,
 } from "@/lib/actions/projects";
-import {
-  createFinancialEntry,
-  deleteFinancialEntry,
-} from "@/lib/actions/entities";
+import { deleteFinancialEntry } from "@/lib/actions/entities";
+import { FinancialEntryForm } from "@/components/FinancialEntryForm";
 import { ProjectNotes } from "@/components/ProjectNotes";
 import { ProjectFiles } from "@/components/ProjectFiles";
 
@@ -45,12 +49,8 @@ export default async function ProjectDetail({
     prisma.stage.findMany({ orderBy: { position: "asc" } }),
   ]);
 
-  const revenue = project.financials
-    .filter((f) => f.type === "REVENUE")
-    .reduce((s, f) => s + f.amount, 0);
-  const cost = project.financials
-    .filter((f) => f.type === "COST")
-    .reduce((s, f) => s + f.amount, 0);
+  const revenue = project.financials.reduce((s, f) => s + entryRevenue(f), 0);
+  const cost = project.financials.reduce((s, f) => s + entryCost(f), 0);
   const actualMargin = revenue - cost;
   const estMargin = (project.estRevenue ?? 0) - (project.estCost ?? 0);
 
@@ -148,91 +148,73 @@ export default async function ProjectDetail({
 
             {project.financials.length === 0 ? (
               <p className="px-5 py-6 text-sm text-slate-400">
-                No entries yet. Add revenue or costs below.
+                No entries yet. Add a line item below.
               </p>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="th">Label</th>
-                    <th className="th">Category</th>
-                    <th className="th">Type</th>
-                    <th className="th text-right">Amount</th>
-                    <th className="th"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {project.financials.map((f) => (
-                    <tr
-                      key={f.id}
-                      className="border-b border-slate-50 last:border-0"
-                    >
-                      <td className="td font-medium">{f.label}</td>
-                      <td className="td text-slate-500">{f.category ?? "—"}</td>
-                      <td className="td">
-                        <span
-                          className={`badge ${
-                            f.type === "REVENUE"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-red-50 text-red-600"
-                          }`}
-                        >
-                          {f.type === "REVENUE" ? "Revenue" : "Cost"}
-                        </span>
-                      </td>
-                      <td className="td text-right">
-                        {formatCurrency(f.amount)}
-                      </td>
-                      <td className="td text-right">
-                        <DeleteButton
-                          small
-                          label="✕"
-                          confirmText="Delete this entry?"
-                          action={async () => {
-                            "use server";
-                            await deleteFinancialEntry(f.id, project.id);
-                          }}
-                        />
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="th">Label</th>
+                      <th className="th">Category</th>
+                      <th className="th text-right">Qty</th>
+                      <th className="th text-right">Unit cost</th>
+                      <th className="th text-right">Markup</th>
+                      <th className="th text-right">Unit sell</th>
+                      <th className="th text-right">Total cost</th>
+                      <th className="th text-right">Total sell</th>
+                      <th className="th"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {project.financials.map((f) => (
+                      <tr
+                        key={f.id}
+                        className="border-b border-slate-50 last:border-0"
+                      >
+                        <td className="td font-medium">{f.label}</td>
+                        <td className="td text-slate-500">
+                          {f.category ?? "—"}
+                        </td>
+                        <td className="td text-right text-slate-500">
+                          {f.quantity?.toLocaleString() ?? "—"}
+                        </td>
+                        <td className="td text-right text-slate-500">
+                          {f.unitCost != null ? formatUnitPrice(f.unitCost) : "—"}
+                        </td>
+                        <td className="td text-right text-slate-500">
+                          {f.markup != null
+                            ? `${Math.round(f.markup)}%`
+                            : "—"}
+                        </td>
+                        <td className="td text-right text-slate-500">
+                          {f.unitSell != null ? formatUnitPrice(f.unitSell) : "—"}
+                        </td>
+                        <td className="td text-right text-red-600">
+                          {formatCurrency(entryCost(f))}
+                        </td>
+                        <td className="td text-right text-emerald-600">
+                          {formatCurrency(entryRevenue(f))}
+                        </td>
+                        <td className="td text-right">
+                          <DeleteButton
+                            small
+                            label="✕"
+                            confirmText="Delete this entry?"
+                            action={async () => {
+                              "use server";
+                              await deleteFinancialEntry(f.id, project.id);
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
-            <form
-              action={createFinancialEntry}
-              className="grid grid-cols-2 gap-3 border-t border-slate-200 p-5 sm:grid-cols-5"
-            >
-              <input type="hidden" name="projectId" value={project.id} />
-              <input
-                name="label"
-                required
-                placeholder="Label"
-                className="input col-span-2 sm:col-span-1"
-              />
-              <select name="category" className="input">
-                <option value="">Category…</option>
-                {FINANCIAL_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <select name="type" className="input" defaultValue="COST">
-                <option value="REVENUE">Revenue</option>
-                <option value="COST">Cost</option>
-              </select>
-              <input
-                name="amount"
-                type="number"
-                step="0.01"
-                required
-                placeholder="Amount"
-                className="input"
-              />
-              <button className="btn-primary">Add</button>
-            </form>
+            <FinancialEntryForm projectId={project.id} />
           </div>
 
           <ProjectNotes projectId={project.id} initial={project.notes ?? ""} />

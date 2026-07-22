@@ -55,8 +55,32 @@ export const FINANCIAL_CATEGORIES = [
   "Commission",
   "Labor",
   "Sample",
+  "Production Good",
   "Other",
 ];
+
+/** Revenue contributed by a financial entry, supporting both the new
+ *  quantity/cost/markup/sell line items and legacy type/amount entries. */
+export function entryRevenue(f: {
+  type: string | null;
+  amount: number | null;
+  totalSell: number | null;
+}): number {
+  if (f.totalSell != null) return f.totalSell;
+  if (f.type === "REVENUE") return f.amount ?? 0;
+  return 0;
+}
+
+/** Cost contributed by a financial entry (new line items or legacy). */
+export function entryCost(f: {
+  type: string | null;
+  amount: number | null;
+  totalCost: number | null;
+}): number {
+  if (f.totalCost != null) return f.totalCost;
+  if (f.type === "COST") return f.amount ?? 0;
+  return 0;
+}
 
 /* ---------------- Territory ---------------- */
 
@@ -146,6 +170,17 @@ export function formatCurrency(n: number | null | undefined) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
+  }).format(n);
+}
+
+/** Per-unit price with cents (and up to 4 digits for fractional-cent pricing). */
+export function formatUnitPrice(n: number | null | undefined) {
+  if (n === null || n === undefined) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
   }).format(n);
 }
 

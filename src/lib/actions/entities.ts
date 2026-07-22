@@ -156,16 +156,24 @@ export async function deleteVendor(id: string) {
 export async function createFinancialEntry(formData: FormData) {
   const projectId = str(formData.get("projectId"));
   const label = str(formData.get("label"));
-  const amount = num(formData.get("amount"));
-  const type = str(formData.get("type"));
-  if (!projectId || !label || amount === null || !type) return;
+  const quantity = num(formData.get("quantity"));
+  const unitCost = num(formData.get("unitCost"));
+  const markup = num(formData.get("markup"));
+  const unitSell = num(formData.get("unitSell"));
+  const totalCost = num(formData.get("totalCost"));
+  const totalSell = num(formData.get("totalSell"));
+  if (!projectId || !label) return;
   await prisma.financialEntry.create({
     data: {
       projectId,
       label,
-      amount,
-      type,
       category: str(formData.get("category")),
+      quantity: quantity !== null ? Math.round(quantity) : null,
+      unitCost,
+      markup,
+      unitSell,
+      totalCost,
+      totalSell,
     },
   });
   revalidatePath("/financials");

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, StageBadge } from "@/components/ui";
-import { formatCurrency } from "@/lib/constants";
+import { entryCost, entryRevenue, formatCurrency } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +16,11 @@ export default async function FinancialsPage() {
   });
 
   const rows = projects.map((p) => {
-    const actualRevenue = p.financials
-      .filter((f) => f.type === "REVENUE")
-      .reduce((s, f) => s + f.amount, 0);
-    const actualCost = p.financials
-      .filter((f) => f.type === "COST")
-      .reduce((s, f) => s + f.amount, 0);
+    const actualRevenue = p.financials.reduce(
+      (s, f) => s + entryRevenue(f),
+      0
+    );
+    const actualCost = p.financials.reduce((s, f) => s + entryCost(f), 0);
     return {
       id: p.id,
       name: p.name,
